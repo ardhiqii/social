@@ -42,10 +42,11 @@ func (app *application) mount() http.Handler {
 		r.Get("/health", app.healthCheckHandler)
 
 		r.Route("/posts", func(r chi.Router) {
-			r.Get("/", func(w http.ResponseWriter, r *http.Request){
-				w.Write([]byte("GET /v1/post works"))
-			})
 			r.Post("/", app.createPostHandler)
+			
+			r.Route("/{postID}",func(r chi.Router) {
+				r.Get("/", app.getPostHandler)
+			})
 		})
 	})
 
