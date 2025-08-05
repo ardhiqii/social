@@ -16,9 +16,9 @@ type CreatePostPayload struct {
 	Tags    []string `json:"tags"  `
 }
 
-type contextKey string
+type postKey string
 
-const postKey contextKey = "post"
+const postCtx postKey = "post"
 
 func (app *application) createPostHandler(w http.ResponseWriter, r *http.Request) {
 	var payload CreatePostPayload
@@ -79,7 +79,7 @@ func (app *application) deletePostHandler(w http.ResponseWriter, r *http.Request
 		return
 	}
 	ctx := r.Context()
-	if err := app.store.Posts.DeleteByID(ctx, id); err != nil {
+	if err := app.store.Posts.Delete(ctx, id); err != nil {
 		switch {
 		case errors.Is(err, store.ErrNotFound):
 			app.notFoundResponse(w, r, err)
@@ -92,8 +92,33 @@ func (app *application) deletePostHandler(w http.ResponseWriter, r *http.Request
 	w.WriteHeader(http.StatusNoContent)
 }
 
+type UpdatePostPayload struct{
+	Title string `json:"title" validate:"omitempty,max=100"`
+	Content string `json:"content validate:"omitempty,max=1000"`
+}
+
 func (app *application) updatePostHandler(w http.ResponseWriter, r *http.Request){
 	post := getPostFromCtx(r)
+	ctx := r.Context()
+
+	var payload UpdatePostPayload
+	if err := readJSON(w,r,&payload); err != nil{
+		app.badRequestResponse(w,r,err)
+		return
+	}
+
+	
+
+	if err := Validate.Struct(payload); err != nil{
+		app.badRequestResponse(w,r,err)
+		return
+	}
+
+	if err := app.store.Posts.Update(ctx,post); err != nil{
+		app.internalServerError(w,r,err)
+		return
+	}
+
 	if err := writeJSON(w, http.StatusOK, post); err != nil{
 		app.internalServerError(w,r,err)
 	}
@@ -120,13 +145,13 @@ func (app *application) postsContextMiddleware(next http.Handler) http.Handler {
 			return
 		}
 
-		ctx = context.WithValue(ctx,postKey,post)
+		ctx = context.WithValue(ctx,postCtx,post)
 		next.ServeHTTP(w,r.WithContext(ctx))
 	})
 }
 
 
 func getPostFromCtx(r *http.Request) *store.Post{
-	post, _ := r.Context().Value(postKey).(*store.Post)
+	post, _ := r.Context().Value(postCtx).(*store.Post)
 	return post
 }

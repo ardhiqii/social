@@ -68,7 +68,7 @@ func (s *PostStrore) GetByID(ctx context.Context, id int64) (*Post, error) {
 	return &post, nil
 }
 
-func (s *PostStrore) DeleteByID(ctx context.Context, id int64) error{
+func (s *PostStrore) Delete(ctx context.Context, id int64) error{
 	query := `
 	DELETE FROM posts
 	WHERE id = $1
@@ -86,6 +86,21 @@ func (s *PostStrore) DeleteByID(ctx context.Context, id int64) error{
 
 	if rows == 0{
 		return ErrNotFound
+	}
+
+	return nil
+}
+
+
+func (s *PostStrore) Update (ctx context.Context, post *Post) error {
+	query := `
+	UPDATE posts
+	SET title = $1, content = $2
+	WHERE id = $3
+	`
+	_,err := s.db.ExecContext(ctx,query,post.ID)
+	if err != nil{
+		return err
 	}
 
 	return nil
