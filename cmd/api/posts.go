@@ -46,7 +46,7 @@ func (app *application) createPostHandler(w http.ResponseWriter, r *http.Request
 		return
 	}
 
-	if err := writeJSON(w, http.StatusCreated, post); err != nil {
+	if err := app.jsonResponse(w, http.StatusCreated, post); err != nil {
 		app.internalServerError(w, r, err)
 		return
 	}
@@ -64,7 +64,7 @@ func (app *application) getPostHandler(w http.ResponseWriter, r *http.Request) {
 
 	post.Comments = comments
 
-	if err := writeJSON(w, http.StatusOK, post); err != nil {
+	if err := app.jsonResponse(w, http.StatusOK, post); err != nil {
 		app.internalServerError(w, r, err)
 		return
 	}
@@ -92,35 +92,41 @@ func (app *application) deletePostHandler(w http.ResponseWriter, r *http.Request
 	w.WriteHeader(http.StatusNoContent)
 }
 
-type UpdatePostPayload struct{
-	Title string `json:"title" validate:"omitempty,max=100"`
-	Content string `json:"content validate:"omitempty,max=1000"`
+type UpdatePostPayload struct {
+	Title   *string `json:"title" validate:"omitempty,max=100"`
+	Content *string `json:"content" validate:"omitempty,max=1000"`
 }
 
-func (app *application) updatePostHandler(w http.ResponseWriter, r *http.Request){
+func (app *application) updatePostHandler(w http.ResponseWriter, r *http.Request) {
 	post := getPostFromCtx(r)
 	ctx := r.Context()
 
 	var payload UpdatePostPayload
-	if err := readJSON(w,r,&payload); err != nil{
-		app.badRequestResponse(w,r,err)
+	if err := readJSON(w, r, &payload); err != nil {
+		app.badRequestResponse(w, r, err)
 		return
 	}
 
-	
-
-	if err := Validate.Struct(payload); err != nil{
-		app.badRequestResponse(w,r,err)
+	if err := Validate.Struct(payload); err != nil {
+		app.badRequestResponse(w, r, err)
 		return
 	}
 
-	if err := app.store.Posts.Update(ctx,post); err != nil{
-		app.internalServerError(w,r,err)
+	if payload.Content != nil{
+		post.Content = *payload.Content
+	}
+
+	if payload.Title != nil{
+		post.Title = *payload.Title
+	}
+
+	if err := app.store.Posts.Update(ctx, post); err != nil {
+		app.internalServerError(w, r, err)
 		return
 	}
 
-	if err := writeJSON(w, http.StatusOK, post); err != nil{
-		app.internalServerError(w,r,err)
+	if err := app.jsonResponse(w, http.StatusOK, post); err != nil {
+		app.internalServerError(w, r, err)
 	}
 }
 
@@ -145,13 +151,12 @@ func (app *application) postsContextMiddleware(next http.Handler) http.Handler {
 			return
 		}
 
-		ctx = context.WithValue(ctx,postCtx,post)
-		next.ServeHTTP(w,r.WithContext(ctx))
+		ctx = context.WithValue(ctx, postCtx, post)
+		next.ServeHTTP(w, r.WithContext(ctx))
 	})
 }
 
-
-func getPostFromCtx(r *http.Request) *store.Post{
+func getPostFromCtx(r *http.Request) *store.Post {
 	post, _ := r.Context().Value(postCtx).(*store.Post)
 	return post
 }
