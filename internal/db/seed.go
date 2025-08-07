@@ -144,9 +144,6 @@ var contentComments = []string{
 	"Clear and concise explanation. Keep up the good work!",
 }
 
-
-
-
 func Seed(store store.Storage) {
 	ctx := context.Background()
 
@@ -158,26 +155,25 @@ func Seed(store store.Storage) {
 		}
 	}
 
-  posts := generatePosts(200,users)
+	posts := generatePosts(200, users)
 
-  for _,post := range posts{
-    if err := store.Posts.Create(ctx, post); err != nil {
+	for _, post := range posts {
+		if err := store.Posts.Create(ctx, post); err != nil {
 			log.Println("Error creating post:", err)
 			return
 		}
-  }
+	}
 
-  comments := generateComents(500,users,posts)
+	comments := generateComments(500, users, posts)
 
-  for _,comment := range comments{
-    if err := store.Comments.Create(ctx, comment); err != nil {
+	for _, comment := range comments {
+		if err := store.Comments.Create(ctx, comment); err != nil {
 			log.Println("Error creating comment:", err)
 			return
 		}
-  }
+	}
 
-
-	return
+	log.Println("Seeding complete")
 }
 
 func generateUsers(num int) []*store.User {
@@ -194,41 +190,39 @@ func generateUsers(num int) []*store.User {
 }
 
 func generatePosts(num int, users []*store.User) []*store.Post {
-  posts := make([]*store.Post,num)
-  for i := 0; i < num; i++ {
-    user := users[rand.Intn(len(users))]
+	posts := make([]*store.Post, num)
+	for i := 0; i < num; i++ {
+		user := users[rand.Intn(len(users))]
 
-    var tempTags []string
-    countTag := rand.Intn(len(tags));
-    for j := 0; j < countTag; j++ {
-      tempTags = append(tempTags,tags[rand.Intn(len(tags))] )
-    }
+		var tempTags []string
+		countTag := rand.Intn(len(tags))
+		for j := 0; j < countTag; j++ {
+			tempTags = append(tempTags, tags[rand.Intn(len(tags))])
+		}
 
-    posts[i] = &store.Post{
-      UserID: user.ID,
-      Title: titles[rand.Intn(len(titles))],
-      Content: contents[rand.Intn(len(contents))],
-      Tags: tempTags,
+		posts[i] = &store.Post{
+			UserID:  user.ID,
+			Title:   titles[rand.Intn(len(titles))],
+			Content: contents[rand.Intn(len(contents))],
+			Tags:    tempTags,
+		}
+	}
 
-    }
-  }
-
-  return posts
+	return posts
 }
 
+func generateComments(num int, users []*store.User, posts []*store.Post) []*store.Comment {
+	comments := make([]*store.Comment, num)
 
-func generateComents(num int, users []*store.User, posts []*store.Post) []*store.Comment {
-  comments := make([]*store.Comment, num)
+	for i := 0; i < num; i++ {
+		user := users[rand.Intn(len(users))]
+		post := posts[rand.Intn(len(posts))]
 
-  for i := 0; i < num; i++ {
-    user := users[rand.Intn(len(users))]
-    post := posts[rand.Intn(len(posts))]
-
-    comments[i] = &store.Comment{
-      PostID: post.ID,
-      UserID: user.ID,
-      Content: contentComments[rand.Intn(len(contentComments))],
-    }
-  }
-  return comments
+		comments[i] = &store.Comment{
+			PostID:  post.ID,
+			UserID:  user.ID,
+			Content: contentComments[rand.Intn(len(contentComments))],
+		}
+	}
+	return comments
 }
