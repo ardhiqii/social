@@ -25,7 +25,7 @@ type dbConfig struct {
 type config struct {
 	addr string
 	db   dbConfig
-	env string
+	env  string
 }
 
 func (app *application) mount() http.Handler {
@@ -43,15 +43,28 @@ func (app *application) mount() http.Handler {
 
 		r.Route("/posts", func(r chi.Router) {
 			r.Post("/", app.createPostHandler)
-			
-			r.Route("/{postID}",func(r chi.Router) {
+
+			r.Route("/{postID}", func(r chi.Router) {
 				r.Use(app.postsContextMiddleware)
-				
+
 				r.Get("/", app.getPostHandler)
 				r.Delete("/", app.deletePostHandler)
 				r.Patch("/", app.updatePostHandler)
 
-        r.Post("/comment", app.createCommentHandler)
+				r.Post("/comment", app.createCommentHandler)
+			})
+		})
+
+		r.Route("/users", func(r chi.Router) {
+
+			r.Post("/", app.createUserHandler)
+
+			r.Route("/{userID}", func(r chi.Router) {
+				r.Use(app.usersContextMiddleware)
+
+				r.Get("/", app.getUserHandler)
+				r.Delete("/", app.deleteUserHandler)
+
 			})
 		})
 	})
