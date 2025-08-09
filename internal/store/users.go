@@ -37,7 +37,7 @@ func (s *UserStore) Create(ctx context.Context, user *User) error {
 
 func (s *UserStore) GetByID(ctx context.Context, userID int64) (*User, error) {
 	query := `
-	SELECT username, email
+	SELECT username, email,created_at
 	FROM users
 	WHERE id = $1
 	`
@@ -49,6 +49,7 @@ func (s *UserStore) GetByID(ctx context.Context, userID int64) (*User, error) {
 	err := s.db.QueryRowContext(ctx, query, userID).Scan(
 		&user.Username,
 		&user.Email,
+    &user.CreatedAt,
 	)
 	if err != nil {
 		switch {
@@ -84,4 +85,33 @@ func (s *UserStore) Delete(ctx context.Context, userID int64) error{
 	}
 
 	return nil
+}
+
+
+func (s *UserStore) Update(ctx context.Context, user *User) error {
+  query := `
+  UPDATE users
+  SET username = $1, email = $2
+  WHERE id = $3
+  `
+  ctx, cancel := context.WithTimeout(ctx,QueryTimeoutDuration)
+  defer cancel()
+
+  res,err := s.db.ExecContext(ctx,query,user.Username, user.Email, user.ID)
+
+  if err != nil{
+    return err
+  }
+
+  rows, err := res.RowsAffected()
+  if err != nil{
+    return err
+  }
+
+  if rows == 0{
+    return ErrNotFound
+  }
+
+  return nil
+
 }

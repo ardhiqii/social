@@ -76,6 +76,51 @@ func (app *application) deleteUserHandler(w http.ResponseWriter, r *http.Request
 	w.WriteHeader(http.StatusNoContent)
 }
 
+type UpdateUserPayload struct {
+	Username *string `json:"username" validate:"omitempty,max=255"`
+	Email    *string `json:"email" validate:"omitempty,max=100"`
+}
+
+func (app *application) updateUserHandler(w http.ResponseWriter, r *http.Request) {
+	var payload UpdateUserPayload
+  user := getUserFromCtx(r)
+  ctx := r.Context()
+
+  if err := readJSON(w,r,&payload); err != nil{
+    app.badRequestResponse(w,r,err);
+    return
+  }
+
+  if err := Validate.Struct(payload); err != nil{
+    app.badRequestResponse(w,r,err)
+    return
+  }
+
+  if payload.Email != nil{
+    user.Email = *payload.Email
+  }
+
+  if payload.Username != nil{
+    user.Username = *payload.Username
+  }
+
+  if err := app.store.Users.Update(ctx,user); err != nil{
+    switch  {
+    case errors.Is(err,store.ErrNotFound):
+      app.notFoundResponse(w,r,err)
+      return
+    default:
+      app.internalServerError(w,r,err)
+      return
+    }
+  }
+
+  if err := app.jsonResponse(w,http.StatusOK,user); err != nil{
+    app.internalServerError(w,r,err)
+  }
+
+}
+
 func (app *application) usersContextMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		idParm := chi.URLParam(r, "userID")

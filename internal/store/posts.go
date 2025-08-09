@@ -29,8 +29,8 @@ func (s *PostStrore) Create(ctx context.Context, post *Post) error {
 	INSERT INTO posts (content,title,user_id,tags) 
 	VALUES ($1,$2,$3,$4) RETURNING id, created_at, updated_at
 	`
-  ctx,cancel := context.WithTimeout(ctx,QueryTimeoutDuration)
-  defer cancel()
+	ctx, cancel := context.WithTimeout(ctx, QueryTimeoutDuration)
+	defer cancel()
 
 	err := s.db.QueryRowContext(ctx, query, post.Content, post.Title, post.UserID, pq.Array(post.Tags)).Scan(
 		&post.ID,
@@ -50,8 +50,8 @@ func (s *PostStrore) GetByID(ctx context.Context, id int64) (*Post, error) {
 	WHERE id = $1
 	`
 
-  ctx,cancel := context.WithTimeout(ctx,QueryTimeoutDuration)
-  defer cancel()
+	ctx, cancel := context.WithTimeout(ctx, QueryTimeoutDuration)
+	defer cancel()
 
 	var post Post
 	err := s.db.QueryRowContext(ctx, query, id).Scan(
@@ -82,8 +82,8 @@ func (s *PostStrore) Delete(ctx context.Context, id int64) error {
 	WHERE id = $1
 	`
 
-  ctx,cancel := context.WithTimeout(ctx,QueryTimeoutDuration)
-  defer cancel()
+	ctx, cancel := context.WithTimeout(ctx, QueryTimeoutDuration)
+	defer cancel()
 
 	res, err := s.db.ExecContext(ctx, query, id)
 	if err != nil {
@@ -110,17 +110,17 @@ func (s *PostStrore) Update(ctx context.Context, post *Post) error {
   RETURNING version
 	`
 
-  ctx,cancel := context.WithTimeout(ctx,QueryTimeoutDuration)
-  defer cancel()
+	ctx, cancel := context.WithTimeout(ctx, QueryTimeoutDuration)
+	defer cancel()
 
 	err := s.db.QueryRowContext(ctx, query, post.Title, post.Content, post.ID, post.Version).Scan(&post.Version)
 	if err != nil {
-		switch{
-    case errors.Is(err, sql.ErrNoRows):
-      return ErrNotFound
-    default:
-      return err
-    }
+		switch {
+		case errors.Is(err, sql.ErrNoRows):
+			return ErrNotFound
+		default:
+			return err
+		}
 	}
 
 	return nil
