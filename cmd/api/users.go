@@ -76,6 +76,51 @@ func (app *application) deleteUserHandler(w http.ResponseWriter, r *http.Request
 	w.WriteHeader(http.StatusNoContent)
 }
 
+type FollowUser struct {
+	UserID int64 `json:"user_id"`
+}
+
+func (app *application) followUserHandler(w http.ResponseWriter, r *http.Request) {
+	targetUser := getUserFromCtx(r)
+	ctx := r.Context()
+
+	var payload FollowUser
+	if err := readJSON(w, r, &payload); err != nil {
+		app.badRequestResponse(w, r, err)
+		return
+	}
+
+	if err := app.store.Followers.Follow(ctx, targetUser.ID, payload.UserID); err != nil {
+		app.internalServerError(w, r, err)
+		return
+	}
+
+	if err := app.jsonResponse(w, http.StatusNoContent, nil); err != nil {
+		app.internalServerError(w, r, err)
+	}
+
+}
+
+func (app *application) unfollowUserHandler(w http.ResponseWriter, r *http.Request) {
+	targetUser := getUserFromCtx(r)
+	ctx := r.Context()
+
+	var payload FollowUser
+	if err := readJSON(w, r, &payload); err != nil {
+		app.badRequestResponse(w, r, err)
+		return
+	}
+
+	if err := app.store.Followers.Unfollow(ctx, targetUser.ID, payload.UserID); err != nil {
+		app.internalServerError(w, r, err)
+		return
+	}
+
+	if err := app.jsonResponse(w, http.StatusNoContent, nil); err != nil {
+		app.internalServerError(w, r, err)
+	}
+}
+
 type UpdateUserPayload struct {
 	Username *string `json:"username" validate:"omitempty,max=255"`
 	Email    *string `json:"email" validate:"omitempty,max=100"`
@@ -83,41 +128,41 @@ type UpdateUserPayload struct {
 
 func (app *application) updateUserHandler(w http.ResponseWriter, r *http.Request) {
 	var payload UpdateUserPayload
-  user := getUserFromCtx(r)
-  ctx := r.Context()
+	user := getUserFromCtx(r)
+	ctx := r.Context()
 
-  if err := readJSON(w,r,&payload); err != nil{
-    app.badRequestResponse(w,r,err);
-    return
-  }
+	if err := readJSON(w, r, &payload); err != nil {
+		app.badRequestResponse(w, r, err)
+		return
+	}
 
-  if err := Validate.Struct(payload); err != nil{
-    app.badRequestResponse(w,r,err)
-    return
-  }
+	if err := Validate.Struct(payload); err != nil {
+		app.badRequestResponse(w, r, err)
+		return
+	}
 
-  if payload.Email != nil{
-    user.Email = *payload.Email
-  }
+	if payload.Email != nil {
+		user.Email = *payload.Email
+	}
 
-  if payload.Username != nil{
-    user.Username = *payload.Username
-  }
+	if payload.Username != nil {
+		user.Username = *payload.Username
+	}
 
-  if err := app.store.Users.Update(ctx,user); err != nil{
-    switch  {
-    case errors.Is(err,store.ErrNotFound):
-      app.notFoundResponse(w,r,err)
-      return
-    default:
-      app.internalServerError(w,r,err)
-      return
-    }
-  }
+	if err := app.store.Users.Update(ctx, user); err != nil {
+		switch {
+		case errors.Is(err, store.ErrNotFound):
+			app.notFoundResponse(w, r, err)
+			return
+		default:
+			app.internalServerError(w, r, err)
+			return
+		}
+	}
 
-  if err := app.jsonResponse(w,http.StatusOK,user); err != nil{
-    app.internalServerError(w,r,err)
-  }
+	if err := app.jsonResponse(w, http.StatusOK, user); err != nil {
+		app.internalServerError(w, r, err)
+	}
 
 }
 
@@ -126,7 +171,7 @@ func (app *application) usersContextMiddleware(next http.Handler) http.Handler {
 		idParm := chi.URLParam(r, "userID")
 		userID, err := strconv.ParseInt(idParm, 10, 64)
 		if err != nil {
-			app.internalServerError(w, r, err)
+			app.badRequestResponse(w, r, err)
 			return
 		}
 		ctx := r.Context()
