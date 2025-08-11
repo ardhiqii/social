@@ -64,10 +64,10 @@ func (app *application) mount() http.Handler {
 
 				r.Get("/", app.getUserHandler)
 				r.Delete("/", app.deleteUserHandler)
-        r.Patch("/", app.updateUserHandler)
+				r.Patch("/", app.updateUserHandler)
 
-        r.Put("/follow", app.followUserHandler)
-        r.Put("/unfollow", app.unfollowUserHandler)
+				r.Put("/follow", app.followUserHandler)
+				r.Put("/unfollow", app.unfollowUserHandler)
 
 			})
 		})
