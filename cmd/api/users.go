@@ -76,36 +76,23 @@ func (app *application) deleteUserHandler(w http.ResponseWriter, r *http.Request
 	w.WriteHeader(http.StatusNoContent)
 }
 
-type FollowUser struct {
+type CurrentUser struct {
 	UserID int64 `json:"user_id"`
 }
 
 func (app *application) followUserHandler(w http.ResponseWriter, r *http.Request) {
-	followUser := getUserFromCtx(r)
+	targetUser := getUserFromCtx(r)
 	ctx := r.Context()
 
-	var payload FollowUser
+	var payload CurrentUser
 	if err := readJSON(w, r, &payload); err != nil {
 		app.badRequestResponse(w, r, err)
 		return
 	}
 
-  if payload.UserID == followUser.ID{
-    err := errors.New("user id cannot be the same")
-    app.badRequestResponse(w,r,err)
-    return
-  }
-
-	if err := app.store.Followers.Follow(ctx, followUser.ID, payload.UserID); err != nil {
-    switch err {
-    case store.ErrConfilct:
-      app.conflictResponse(w,r,err)
-      return
-    default:
-      app.internalServerError(w, r, err)
+	if err := app.store.Followers.Follow(ctx, targetUser.ID, payload.UserID); err != nil {
+		app.internalServerError(w, r, err)
 		return
-    }
-		
 	}
 
 	if err := app.jsonResponse(w, http.StatusNoContent, nil); err != nil {
@@ -115,16 +102,16 @@ func (app *application) followUserHandler(w http.ResponseWriter, r *http.Request
 }
 
 func (app *application) unfollowUserHandler(w http.ResponseWriter, r *http.Request) {
-	followUser := getUserFromCtx(r)
+	targetUser := getUserFromCtx(r)
 	ctx := r.Context()
 
-	var payload FollowUser
+	var payload CurrentUser
 	if err := readJSON(w, r, &payload); err != nil {
 		app.badRequestResponse(w, r, err)
 		return
 	}
 
-	if err := app.store.Followers.Unfollow(ctx, followUser.ID, payload.UserID); err != nil {
+	if err := app.store.Followers.Unfollow(ctx, targetUser.ID, payload.UserID); err != nil {
 		app.internalServerError(w, r, err)
 		return
 	}

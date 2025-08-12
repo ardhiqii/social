@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"errors"
+	"fmt"
 
 	"github.com/lib/pq"
 )
@@ -18,6 +19,12 @@ type Post struct {
 	UpdatedAt string    `json:"updated_at"`
 	Version   int       `json:"version"`
 	Comments  []Comment `json:"comments"`
+	User      User      `json:"user"`
+}
+
+type PostWithMetadata struct {
+	Post
+	CommentCount int `json:"comments_count"`
 }
 
 type PostStrore struct {
@@ -124,4 +131,43 @@ func (s *PostStrore) Update(ctx context.Context, post *Post) error {
 	}
 
 	return nil
+}
+
+func (s *PostStrore) GetUserFeed(ctx context.Context, userID int64, fq PaginatedFeedQuery) ([]PostWithMetadata, error) {
+	query := fmt.Sprintf(`
+	select 
+		p.id, p.user_id, p.title, p."content", p.created_at, p."version", p.tags,
+		u.username,
+		COUNT(c.id) as comments_count
+	from posts p
+	left join "comments" c on c.post_id  = p.id
+	left join users u on p.user_id = u.id
+	join followers f on f.follower_id = p.user_id or p.user_id = $1
+	where f.user_id = $1 or p.user_id = $1
+	group by p.id, u.username
+	order by p.created_at %s
+	limit $2 offset $3
+	`, fq.Sort)
+
+	ctx, cancel := context.WithTimeout(ctx, QueryTimeoutDuration)
+	defer cancel()
+
+	rows, err := s.db.QueryContext(ctx, query, userID, fq.Limit, fq.Offset)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var feed []PostWithMetadata
+	for rows.Next() {
+		var post PostWithMetadata
+		err := rows.Scan(&post.ID, &post.UserID, &post.Title, &post.Content, &post.CreatedAt, &post.Version, pq.Array(&post.Tags), &post.User.Username, &post.CommentCount)
+		if err != nil {
+			return nil, err
+		}
+		feed = append(feed, post)
+	}
+
+	return feed, nil
+
 }
