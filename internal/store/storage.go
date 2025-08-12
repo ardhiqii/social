@@ -8,41 +8,40 @@ import (
 )
 
 var (
-	ErrNotFound = errors.New("resource not found")
-  ErrConfilct = errors.New("resource already exists")
-  QueryTimeoutDuration = time.Second * 5
+	ErrNotFound          = errors.New("resource not found")
+	ErrConfilct          = errors.New("resource already exists")
+	QueryTimeoutDuration = time.Second * 5
 )
 
 type Storage struct {
 	Posts interface {
-		Create(context.Context,*Post) error
+		Create(context.Context, *Post) error
 		GetByID(context.Context, int64) (*Post, error)
 		Delete(context.Context, int64) error
 		Update(context.Context, *Post) error
 		GetUserFeed(context.Context, int64, PaginatedFeedQuery) ([]PostWithMetadata, error)
 	}
-	Users interface{
+	Users interface {
 		Create(context.Context, *User) error
 		GetByID(context.Context, int64) (*User, error)
 		Delete(context.Context, int64) error
-    Update(context.Context, *User) error
+		Update(context.Context, *User) error
 	}
-  Comments interface{
-    GetByPostID(context.Context,  int64) ([]Comment, error)
+	Comments interface {
+		GetByPostID(context.Context, int64) ([]Comment, error)
 		Create(context.Context, *Comment) error
-  }
-  Followers interface{
-    Follow(ctx context.Context, followerID, userID int64) error
-    Unfollow(ctx context.Context, followerID, userID int64) error
-  }
+	}
+	Followers interface {
+		Follow(ctx context.Context, followerID, userID int64) error
+		Unfollow(ctx context.Context, followerID, userID int64) error
+	}
 }
 
-
-func NewStorage(db *sql.DB) Storage{
+func NewStorage(db *sql.DB) Storage {
 	return Storage{
-			Posts: &PostStrore{db},
-			Users: &UserStore{db},
-      Comments: &CommentStore{db},
-      Followers: &FollowerStore{db},
+		Posts:     &PostStrore{db},
+		Users:     &UserStore{db},
+		Comments:  &CommentStore{db},
+		Followers: &FollowerStore{db},
 	}
 }

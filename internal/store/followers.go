@@ -25,26 +25,24 @@ func (s *FollowerStore) Follow(ctx context.Context, followerID, userID int64) er
 	ctx, cancel := context.WithTimeout(ctx, QueryTimeoutDuration)
 	defer cancel()
 
-
 	_, err := s.db.ExecContext(ctx, query, userID, followerID)
-  if err != nil{
-    if pqErr, ok := err.(*pq.Error); ok && pqErr.Code == "23505"{
-      return ErrConfilct
-    }
-  }
-  return nil
-  
+	if err != nil {
+		if pqErr, ok := err.(*pq.Error); ok && pqErr.Code == "23505" {
+			return ErrConfilct
+		}
+	}
+	return nil
+
 }
 
 func (s *FollowerStore) Unfollow(ctx context.Context, followerID, userID int64) error {
-query := `
+	query := `
   DELETE FROM followers
   where user_id = $1 and follower_id = $2
   `
 	ctx, cancel := context.WithTimeout(ctx, QueryTimeoutDuration)
 	defer cancel()
 
-
 	_, err := s.db.ExecContext(ctx, query, userID, followerID)
-  return err
+	return err
 }

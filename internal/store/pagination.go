@@ -47,34 +47,33 @@ func (fq PaginatedFeedQuery) Parse(r *http.Request) (PaginatedFeedQuery, error) 
 	}
 
 	tags := qs.Get("tags")
-	if tags != ""{
-		fq.Tags = strings.Split(tags,",")
+	if tags != "" {
+		fq.Tags = strings.Split(tags, ",")
 	}
 
 	search := qs.Get("search")
-	if search != ""{
+	if search != "" {
 		fq.Search = search
 	}
 
 	since := qs.Get("since")
-	if since != ""{
+	if since != "" {
 		fq.Since = parseTime(since)
 	}
 
 	until := qs.Get("until")
-	if until != ""{
+	if until != "" {
 		fq.Until = parseTime(until)
 	}
 
 	fmt.Println(fq)
 
-
 	return fq, nil
 }
 
-func parseTime(s string) string{
-	t, err := time.Parse(time.DateTime,s)
-	if err != nil{
+func parseTime(s string) string {
+	t, err := time.Parse(time.DateTime, s)
+	if err != nil {
 		return ""
 	}
 	return t.Format(time.DateTime)

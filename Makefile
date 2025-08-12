@@ -23,3 +23,8 @@ migrate-reset-up: migrate-reset migrate-up
 .PHONY: seed
 seed:
 	@go run cmd/migrate/seed/main.go
+
+
+.PHONY: gen-docs
+gen-docs:
+	@swag init -g main.go -d cmd/api,internal/store,internal/env,internal/db -o docs && swag fmt

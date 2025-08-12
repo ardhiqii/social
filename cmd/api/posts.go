@@ -112,11 +112,11 @@ func (app *application) updatePostHandler(w http.ResponseWriter, r *http.Request
 		return
 	}
 
-	if payload.Content != nil{
+	if payload.Content != nil {
 		post.Content = *payload.Content
 	}
 
-	if payload.Title != nil{
+	if payload.Title != nil {
 		post.Title = *payload.Title
 	}
 

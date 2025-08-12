@@ -10,7 +10,7 @@ type User struct {
 	ID        int64  `json:"id"`
 	Username  string `json:"username"`
 	Email     string `json:"email"`
-	Password  string `json:"-"`
+	Password  string `json:"-"` // Hidden in API response
 	CreatedAt string `json:"created_at"`
 }
 
@@ -41,17 +41,17 @@ func (s *UserStore) GetByID(ctx context.Context, userID int64) (*User, error) {
 	FROM users
 	WHERE id = $1
 	`
-	ctx,cancel := context.WithTimeout(ctx,QueryTimeoutDuration)
-  defer cancel()
+	ctx, cancel := context.WithTimeout(ctx, QueryTimeoutDuration)
+	defer cancel()
 
 	var user User
 
 	err := s.db.QueryRowContext(ctx, query, userID).Scan(
-    &user.ID,
+		&user.ID,
 		&user.Username,
 		&user.Email,
-    &user.Password,
-    &user.CreatedAt,
+		&user.Password,
+		&user.CreatedAt,
 	)
 	if err != nil {
 		switch {
@@ -65,55 +65,54 @@ func (s *UserStore) GetByID(ctx context.Context, userID int64) (*User, error) {
 	return &user, nil
 }
 
-func (s *UserStore) Delete(ctx context.Context, userID int64) error{
+func (s *UserStore) Delete(ctx context.Context, userID int64) error {
 	query := `
 	DELETE FROM users
 	where id = $1
 	`
-	ctx,cancel := context.WithTimeout(ctx,QueryTimeoutDuration)
-  defer cancel()
+	ctx, cancel := context.WithTimeout(ctx, QueryTimeoutDuration)
+	defer cancel()
 
-	res,err := s.db.ExecContext(ctx,query,userID)
-	if err != nil{
+	res, err := s.db.ExecContext(ctx, query, userID)
+	if err != nil {
 		return err
 	}
 	rows, err := res.RowsAffected()
-	if err != nil{
+	if err != nil {
 		return err
 	}
 
-	if rows == 0{
+	if rows == 0 {
 		return ErrNotFound
 	}
 
 	return nil
 }
 
-
 func (s *UserStore) Update(ctx context.Context, user *User) error {
-  query := `
+	query := `
   UPDATE users
   SET username = $1, email = $2
   WHERE id = $3
   `
-  ctx, cancel := context.WithTimeout(ctx,QueryTimeoutDuration)
-  defer cancel()
+	ctx, cancel := context.WithTimeout(ctx, QueryTimeoutDuration)
+	defer cancel()
 
-  res,err := s.db.ExecContext(ctx,query,user.Username, user.Email, user.ID)
+	res, err := s.db.ExecContext(ctx, query, user.Username, user.Email, user.ID)
 
-  if err != nil{
-    return err
-  }
+	if err != nil {
+		return err
+	}
 
-  rows, err := res.RowsAffected()
-  if err != nil{
-    return err
-  }
+	rows, err := res.RowsAffected()
+	if err != nil {
+		return err
+	}
 
-  if rows == 0{
-    return ErrNotFound
-  }
+	if rows == 0 {
+		return ErrNotFound
+	}
 
-  return nil
+	return nil
 
 }
