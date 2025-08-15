@@ -7,6 +7,7 @@ import (
 	"github.com/ardhiqii/social/internal/env"
 	"github.com/ardhiqii/social/internal/store"
 	"github.com/joho/godotenv"
+	"go.uber.org/zap"
 )
 
 const version = "0.0.1"
@@ -48,23 +49,28 @@ func main() {
 		env: env.GetString("ENV", "development"),
 	}
 
+	// Logger
+	logger := zap.Must(zap.NewProduction()).Sugar()
+	defer logger.Sync()
+
 	db, err := db.New(cfg.db.addr, cfg.db.maxOpenConns, cfg.db.maxIdleConns, cfg.db.maxIdleTime)
 	if err != nil {
-		log.Panic(err)
+		logger.Fatal(err)
 	}
 
 	defer db.Close()
-	log.Printf("database conection pool established")
+	logger.Info("database conection pool established")
 
 	store := store.NewStorage(db)
 
 	app := &application{
 		config: cfg,
 		store:  store,
+		logger: logger,
 	}
 
 	mux := app.mount()
 
-	log.Fatal(app.run(mux))
+	logger.Fatal(app.run(mux))
 
 }
