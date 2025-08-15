@@ -1,2 +1,2 @@
 ALTER TABLE
-  users DROP COLUMN is_activate;
+  users DROP COLUMN is_active;

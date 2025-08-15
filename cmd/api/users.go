@@ -130,44 +130,76 @@ type UpdateUserPayload struct {
 	Email    *string `json:"email" validate:"omitempty,max=100"`
 }
 
-func (app *application) updateUserHandler(w http.ResponseWriter, r *http.Request) {
-	var payload UpdateUserPayload
-	user := getUserFromCtx(r)
+// func (app *application) updateUserHandler(w http.ResponseWriter, r *http.Request) {
+// 	var payload UpdateUserPayload
+// 	user := getUserFromCtx(r)
+// 	ctx := r.Context()
+
+// 	if err := readJSON(w, r, &payload); err != nil {
+// 		app.badRequestResponse(w, r, err)
+// 		return
+// 	}
+
+// 	if err := Validate.Struct(payload); err != nil {
+// 		app.badRequestResponse(w, r, err)
+// 		return
+// 	}
+
+// 	if payload.Email != nil {
+// 		user.Email = *payload.Email
+// 	}
+
+// 	if payload.Username != nil {
+// 		user.Username = *payload.Username
+// 	}
+
+// 	if err := app.store.Users.Update(ctx, user); err != nil {
+// 		switch {
+// 		case errors.Is(err, store.ErrNotFound):
+// 			app.notFoundResponse(w, r, err)
+// 			return
+// 		default:
+// 			app.internalServerError(w, r, err)
+// 			return
+// 		}
+// 	}
+
+// 	if err := app.jsonResponse(w, http.StatusOK, user); err != nil {
+// 		app.internalServerError(w, r, err)
+// 	}
+
+// }
+
+// ActivateUser gdoc
+//
+//	@Summary		Activate/Register a user
+//	@Description	Activate/Register a user by invitation token
+//	@Tags			users
+//	@Produce		json
+//	@Param			token	path		string	true	"Invitation token"
+//	@Success		204		{string}	string	"User activated"
+//	@Failure		404		{object}	error
+//	@Failure		500		{object}	error
+//	@Security		ApiKeyAuth
+//	@Router			/users/activate/{token} [put]
+func (app *application) activateUserHandler(w http.ResponseWriter, r *http.Request) {
+	token := chi.URLParam(r, "token")
+
 	ctx := r.Context()
-
-	if err := readJSON(w, r, &payload); err != nil {
-		app.badRequestResponse(w, r, err)
-		return
-	}
-
-	if err := Validate.Struct(payload); err != nil {
-		app.badRequestResponse(w, r, err)
-		return
-	}
-
-	if payload.Email != nil {
-		user.Email = *payload.Email
-	}
-
-	if payload.Username != nil {
-		user.Username = *payload.Username
-	}
-
-	if err := app.store.Users.Update(ctx, user); err != nil {
-		switch {
-		case errors.Is(err, store.ErrNotFound):
+	err := app.store.Users.Activate(ctx, token)
+	if err != nil {
+		switch err {
+		case store.ErrNotFound:
 			app.notFoundResponse(w, r, err)
-			return
 		default:
 			app.internalServerError(w, r, err)
-			return
 		}
+		return
 	}
 
-	if err := app.jsonResponse(w, http.StatusOK, user); err != nil {
+	if err := app.jsonResponse(w, http.StatusNoContent, ""); err != nil {
 		app.internalServerError(w, r, err)
 	}
-
 }
 
 func (app *application) usersContextMiddleware(next http.Handler) http.Handler {
