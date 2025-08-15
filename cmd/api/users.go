@@ -10,12 +10,6 @@ import (
 	"github.com/go-chi/chi/v5"
 )
 
-type CreateUserPayload struct {
-	Username string `json:"username" validate:"required"`
-	Email    string `json:"email" validate:"required"`
-	Password string `json:"password"`
-}
-
 type userKey string
 
 const userCtx userKey = "user"
@@ -38,36 +32,6 @@ func (app *application) getUserHandler(w http.ResponseWriter, r *http.Request) {
 	user := getUserFromCtx(r)
 
 	if err := app.jsonResponse(w, http.StatusOK, user); err != nil {
-		app.internalServerError(w, r, err)
-		return
-	}
-}
-
-func (app *application) createUserHandler(w http.ResponseWriter, r *http.Request) {
-	var payload CreateUserPayload
-	if err := readJSON(w, r, &payload); err != nil {
-		app.badRequestResponse(w, r, err)
-		return
-	}
-
-	if err := Validate.Struct(payload); err != nil {
-		app.badRequestResponse(w, r, err)
-		return
-	}
-
-	user := &store.User{
-		Username: payload.Username,
-		Email:    payload.Email,
-	}
-
-	ctx := r.Context()
-
-	if err := app.store.Users.Create(ctx, user); err != nil {
-		app.internalServerError(w, r, err)
-		return
-	}
-
-	if err := app.jsonResponse(w, http.StatusCreated, user); err != nil {
 		app.internalServerError(w, r, err)
 		return
 	}
