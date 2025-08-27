@@ -6,6 +6,7 @@ import (
 
 	"github.com/ardhiqii/social/internal/db"
 	"github.com/ardhiqii/social/internal/env"
+	"github.com/ardhiqii/social/internal/mailer"
 	"github.com/ardhiqii/social/internal/store"
 	"github.com/joho/godotenv"
 	"go.uber.org/zap"
@@ -49,7 +50,11 @@ func main() {
 		},
 		env: env.GetString("ENV", "development"),
 		mail: mailConfig{
-			exp: time.Hour * 24 * 3, // 3 days
+			exp:       time.Hour * 24 * 3, // 3 days
+			fromEmail: env.GetString("FROM_EMAIL", ""),
+			sendGrid: sendGridConfig{
+				apiKey: env.GetString("SENDGRID_API_KEY", ""),
+			},
 		},
 	}
 
@@ -65,12 +70,15 @@ func main() {
 	defer db.Close()
 	logger.Info("database conection pool established")
 
+	mailer := mailer.NewSendgrid(cfg.mail.sendGrid.apiKey, cfg.mail.fromEmail)
+
 	store := store.NewStorage(db)
 
 	app := &application{
 		config: cfg,
 		store:  store,
 		logger: logger,
+    mailer: mailer,
 	}
 
 	mux := app.mount()

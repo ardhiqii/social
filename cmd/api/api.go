@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/ardhiqii/social/docs" // This for generate swagger docs
+	"github.com/ardhiqii/social/internal/mailer"
 	"github.com/ardhiqii/social/internal/store"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
@@ -17,6 +18,7 @@ type application struct {
 	config config
 	store  store.Storage
 	logger *zap.SugaredLogger
+  mailer mailer.Client
 }
 
 type dbConfig struct {
@@ -35,7 +37,13 @@ type config struct {
 }
 
 type mailConfig struct {
+  sendGrid sendGridConfig
+  fromEmail string
 	exp time.Duration
+}
+
+type sendGridConfig struct{
+  apiKey string
 }
 
 func (app *application) mount() http.Handler {
