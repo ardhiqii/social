@@ -34,6 +34,7 @@ type config struct {
 	env    string
 	apiURL string
 	mail   mailConfig
+  frontendURL string
 }
 
 type mailConfig struct {
