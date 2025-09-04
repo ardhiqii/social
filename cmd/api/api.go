@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/ardhiqii/social/docs" // This for generate swagger docs
+	"github.com/ardhiqii/social/internal/auth"
 	"github.com/ardhiqii/social/internal/mailer"
 	"github.com/ardhiqii/social/internal/store"
 	"github.com/go-chi/chi/v5"
@@ -16,13 +17,12 @@ import (
 )
 
 type application struct {
-	config config
-	store  store.Storage
-	logger *zap.SugaredLogger
-  mailer mailer.Client
+	config        config
+	store         store.Storage
+	logger        *zap.SugaredLogger
+	mailer        mailer.Client
+	authenticator auth.Authenticator
 }
-
-
 
 type dbConfig struct {
 	addr         string
@@ -32,45 +32,52 @@ type dbConfig struct {
 }
 
 type config struct {
-	addr   string
-	db     dbConfig
-	env    string
-	apiURL string
-	mail   mailConfig
-  frontendURL string
-	auth authConfig
+	addr        string
+	db          dbConfig
+	env         string
+	apiURL      string
+	mail        mailConfig
+	frontendURL string
+	auth        authConfig
 }
 
-type authConfig struct{
+type authConfig struct {
 	basic basicConfig
+	token tokenConfig
 }
 
-type basicConfig struct{
+type tokenConfig struct {
+	secret string
+	exp    time.Duration
+	iss    string
+}
+
+type basicConfig struct {
 	user string
 	pass string
 }
 
 type mailConfig struct {
-  sendGrid sendGridConfig
-  fromEmail string
-	exp time.Duration
+	sendGrid  sendGridConfig
+	fromEmail string
+	exp       time.Duration
 }
 
-type sendGridConfig struct{
-  apiKey string
+type sendGridConfig struct {
+	apiKey string
 }
 
 func (app *application) mount() http.Handler {
 	r := chi.NewRouter()
 
-  r.Use(cors.Handler(cors.Options{
-    AllowedOrigins:   []string{"https://*", "http://*"},
-    AllowedMethods:   []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
-    AllowedHeaders:   []string{"Accept", "Authorization", "Content-Type", "X-CSRF-Token"},
-    ExposedHeaders:   []string{"Link"},
-    AllowCredentials: false,
-    MaxAge:           300, // Maximum value not ignored by any of major browsers
-  }))
+	r.Use(cors.Handler(cors.Options{
+		AllowedOrigins:   []string{"https://*", "http://*"},
+		AllowedMethods:   []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
+		AllowedHeaders:   []string{"Accept", "Authorization", "Content-Type", "X-CSRF-Token"},
+		ExposedHeaders:   []string{"Link"},
+		AllowCredentials: false,
+		MaxAge:           300, // Maximum value not ignored by any of major browsers
+	}))
 
 	r.Use(middleware.RequestID)
 	r.Use(middleware.RealIP)
@@ -121,6 +128,7 @@ func (app *application) mount() http.Handler {
 		// Public routes
 		r.Route("/authentication", func(r chi.Router) {
 			r.Post("/user", app.registerUserHandler)
+			r.Post("/token", app.createTokenHandler)
 		})
 
 	})
